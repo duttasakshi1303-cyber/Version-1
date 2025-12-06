@@ -9,13 +9,19 @@ interface TaskListProps {
 export const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
   const [filter, setFilter] = useState<'all' | 'todo' | 'in-progress' | 'done'>('all');
 
-  const filteredTasks = tasks.filter(t => filter === 'all' || t.status === filter);
+  const filteredTasks = tasks.filter(t => {
+    if (filter === 'all') return true;
+    if (filter === 'todo') return t.status === 'Not Started';
+    if (filter === 'in-progress') return t.status === 'In Progress';
+    if (filter === 'done') return t.status === 'Completed';
+    return false;
+  });
 
   const getStatusColor = (status: Task['status']) => {
     switch(status) {
-      case 'done': return 'bg-green-100 text-green-700 border-green-200';
-      case 'in-progress': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'review': return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'Completed': return 'bg-green-100 text-green-700 border-green-200';
+      case 'In Progress': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'On Hold': return 'bg-purple-100 text-purple-700 border-purple-200';
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
@@ -48,14 +54,14 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
           filteredTasks.map((task) => (
             <div key={task.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center gap-4 group">
               <div className="flex-shrink-0 text-slate-400">
-                {task.status === 'done' ? (
+                {task.status === 'Completed' ? (
                   <CheckCircle2 className="text-green-500" />
                 ) : (
                   <Circle />
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className={`font-medium truncate ${task.status === 'done' ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
+                <h4 className={`font-medium truncate ${task.status === 'Completed' ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
                   {task.title}
                 </h4>
                 <div className="flex items-center gap-4 mt-1 text-xs text-slate-500">
@@ -63,7 +69,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
                     <Clock size={12} /> {task.dueDate}
                   </span>
                   <span>•</span>
-                  <span>{task.assignee}</span>
+                  <span>{task.assignee?.name}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3">

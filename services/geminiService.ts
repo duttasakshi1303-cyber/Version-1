@@ -12,7 +12,7 @@ export class GeminiService {
   async generateProjectResponse(query: string, projectContext: ProjectData): Promise<string> {
     try {
       const systemInstruction = `
-        You are 'IzlaBot', a professional and helpful Project Manager AI for Izla Technologies.
+        You are 'ProjectBot', a professional and helpful Project Manager AI for the 'Track My Project' platform.
         You are speaking to the client, 'Acme Corp'.
         
         Your Goal: Answer questions about the current project status based strictly on the provided JSON context.

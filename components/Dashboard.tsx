@@ -1,147 +1,148 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ProjectData } from '../types';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
-import { Clock, CheckCircle, AlertCircle, DollarSign, Calendar } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DashboardProps {
-  data: ProjectData;
+  projects: ProjectData[];
+  onSelectProject: (project: ProjectData) => void;
 }
 
-const COLORS = ['#3b82f6', '#e2e8f0']; // Blue and Slate-200
+export const Dashboard: React.FC<DashboardProps> = ({ projects, onSelectProject }) => {
+  const [searchTerm, setSearchTerm] = useState('');
 
-export const Dashboard: React.FC<DashboardProps> = ({ data }) => {
-  const completedTasks = data.tasks.filter(t => t.status === 'done').length;
-  const totalTasks = data.tasks.length;
-  
-  const pieData = [
-    { name: 'Completed', value: completedTasks },
-    { name: 'Remaining', value: totalTasks - completedTasks },
-  ];
+  // Calculate status counts
+  const counts = {
+    notStarted: projects.filter(p => p.status === 'Not Started').length,
+    inProgress: projects.filter(p => p.status === 'In Progress').length,
+    onHold: projects.filter(p => p.status === 'On Hold').length,
+    cancelled: projects.filter(p => p.status === 'Cancelled').length,
+    finished: projects.filter(p => p.status === 'Finished').length,
+  };
 
-  const budgetData = [
-    { name: 'Used', amount: data.budgetUsed },
-    { name: 'Remaining', amount: data.totalBudget - data.budgetUsed },
-  ];
-
-  const nextMilestone = data.milestones.find(m => m.status === 'active' || m.status === 'upcoming');
+  const filteredProjects = projects.filter(p => 
+    p.projectName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    p.clientName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Stat Cards */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-500">Overall Progress</p>
-            <h3 className="text-2xl font-bold text-slate-800">{data.overallProgress}%</h3>
-          </div>
-          <div className="h-10 w-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
-            <CheckCircle size={20} />
-          </div>
-        </div>
+    <div className="space-y-8 animate-fade-in font-sans">
+      
+      {/* Projects Summary Section */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-slate-800">Projects Summary</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          
+          <SummaryCard label="Not Started" count={counts.notStarted} color="border-l-slate-400 text-slate-600" />
+          <SummaryCard label="In Progress" count={counts.inProgress} color="border-l-blue-500 text-blue-600" />
+          <SummaryCard label="On Hold" count={counts.onHold} color="border-l-orange-400 text-orange-500" />
+          <SummaryCard label="Cancelled" count={counts.cancelled} color="border-l-red-400 text-red-500" />
+          <SummaryCard label="Finished" count={counts.finished} color="border-l-green-500 text-green-600" />
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-500">Budget Usage</p>
-            <h3 className="text-2xl font-bold text-slate-800">${(data.budgetUsed / 1000).toFixed(1)}k <span className="text-xs text-slate-400 font-normal">/ ${(data.totalBudget / 1000).toFixed(1)}k</span></h3>
-          </div>
-          <div className="h-10 w-10 bg-green-50 rounded-full flex items-center justify-center text-green-600">
-            <DollarSign size={20} />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-500">Next Deadline</p>
-            <h3 className="text-lg font-bold text-slate-800">{nextMilestone ? nextMilestone.date : "TBD"}</h3>
-            <p className="text-xs text-slate-400 truncate max-w-[120px]">{nextMilestone?.title}</p>
-          </div>
-          <div className="h-10 w-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-600">
-            <Calendar size={20} />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-500">Pending Tasks</p>
-            <h3 className="text-2xl font-bold text-slate-800">{totalTasks - completedTasks}</h3>
-          </div>
-          <div className="h-10 w-10 bg-purple-50 rounded-full flex items-center justify-center text-purple-600">
-            <Clock size={20} />
-          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Task Completion Chart */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Task Completion Rate</h3>
-          <div className="h-64 w-full flex items-center justify-center">
-             <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend verticalAlign="bottom" height={36}/>
-                </PieChart>
-             </ResponsiveContainer>
+      {/* Projects List Section */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-slate-800">Projects</h2>
+        
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          {/* Table Controls */}
+          <div className="p-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-slate-100">
+             <div className="flex items-center gap-2 text-sm text-slate-600">
+                <select className="border border-slate-300 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
+                  <option>25</option>
+                  <option>50</option>
+                  <option>100</option>
+                </select>
+                <span>entries per page</span>
+             </div>
+
+             <div className="flex items-center">
+               <div className="relative">
+                 <input 
+                   type="text" 
+                   placeholder="Search.." 
+                   value={searchTerm}
+                   onChange={(e) => setSearchTerm(e.target.value)}
+                   className="pl-3 pr-10 py-1.5 border border-slate-300 rounded text-sm focus:outline-none focus:border-blue-500 w-64"
+                 />
+                 <button className="absolute right-0 top-0 h-full px-3 text-slate-500 border-l border-slate-300 bg-slate-50 rounded-r hover:bg-slate-100">
+                    <Search size={14} />
+                 </button>
+               </div>
+             </div>
           </div>
-        </div>
 
-        {/* Budget vs Spend */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-           <h3 className="text-lg font-semibold text-slate-800 mb-4">Financial Overview</h3>
-           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={budgetData}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" width={80} tick={{fontSize: 12}} />
-                <Tooltip cursor={{fill: 'transparent'}} />
-                <Bar dataKey="amount" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-           </div>
-           <div className="mt-4 text-sm text-slate-500 text-center">
-              You have used {((data.budgetUsed / data.totalBudget) * 100).toFixed(1)}% of your allocated budget.
-           </div>
-        </div>
-      </div>
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-slate-700 bg-slate-50 border-b border-slate-200 font-semibold">
+                <tr>
+                  <th className="px-6 py-4">Project Name</th>
+                  <th className="px-6 py-4">Start Date</th>
+                  <th className="px-6 py-4">Deadline</th>
+                  <th className="px-6 py-4">Billing Type</th>
+                  <th className="px-6 py-4">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredProjects.length > 0 ? (
+                  filteredProjects.map((project) => (
+                    <tr key={project.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <button 
+                          onClick={() => onSelectProject(project)}
+                          className="text-blue-500 hover:text-blue-700 hover:underline font-medium text-left"
+                        >
+                          {project.projectName}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">{project.startDate}</td>
+                      <td className="px-6 py-4 text-slate-600">{project.deadline || '-'}</td>
+                      <td className="px-6 py-4 text-slate-600">{project.billingType}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-block px-3 py-1 rounded border text-xs font-medium ${
+                          project.status === 'In Progress' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                          project.status === 'Finished' ? 'bg-green-50 text-green-600 border-green-200' :
+                          'bg-slate-50 text-slate-600 border-slate-200'
+                        }`}>
+                          {project.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                      No projects found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-      {/* Recent Activity / Milestones Snapshot */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Active Milestones</h3>
-        <div className="space-y-4">
-          {data.milestones.filter(m => m.status === 'active' || m.status === 'completed').slice(-3).map((milestone) => (
-            <div key={milestone.id} className="flex items-start gap-4 p-3 rounded-lg hover:bg-slate-50 transition-colors">
-              <div className={`mt-1 h-3 w-3 rounded-full flex-shrink-0 ${
-                milestone.status === 'completed' ? 'bg-green-500' : 'bg-blue-500 animate-pulse'
-              }`} />
-              <div className="flex-1">
-                <div className="flex justify-between">
-                  <h4 className="font-medium text-slate-900">{milestone.title}</h4>
-                  <span className="text-xs text-slate-500">{milestone.date}</span>
-                </div>
-                <p className="text-sm text-slate-500 mt-1">{milestone.description}</p>
-              </div>
+          {/* Pagination */}
+          <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-slate-600">
+            <div>
+               Showing 1 to {filteredProjects.length} of {projects.length} entries
             </div>
-          ))}
+            <div className="flex items-center gap-1">
+               <button className="px-3 py-1 border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50">Previous</button>
+               <button className="px-3 py-1 border border-blue-500 bg-blue-600 text-white rounded">1</button>
+               <button className="px-3 py-1 border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50">Next</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+// Helper Component for Summary Cards
+const SummaryCard: React.FC<{ label: string; count: number; color: string }> = ({ label, count, color }) => (
+  <div className={`bg-white p-4 rounded-lg shadow-sm border border-slate-200 border-l-4 ${color}`}>
+    <h3 className={`text-sm font-medium ${color.split(' ')[1]}`}>{label}</h3>
+    <p className={`text-2xl font-bold mt-1 ${color.split(' ')[1]}`}>{count}</p>
+  </div>
+);
